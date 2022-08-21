@@ -1,0 +1,14 @@
+DEB_PATH=$HOME/Downloads/deb-files/
+
+if [ -e $DEB_PATH ] ; then
+#Instalando packotes deb colocados na pasta informado em DEB_PATH
+echo -e "\e[01;34mInstalling the packages that are in the DEB_PATH\e[00m"
+FILES=$(ls $DEB_PATH)
+for file in $FILES
+do
+sudo dpkg -i $DEB_PATH$file
+done
+echo
+else
+echo
+fi

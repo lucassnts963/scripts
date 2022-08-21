@@ -1,0 +1,5 @@
+node install --lts
+npm install --global yarn
+sudo groupadd docker
+sudo usermod -aG docker $USER
+newgrp docker

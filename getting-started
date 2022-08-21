@@ -42,6 +42,7 @@ echo "alias src='source $FILE_PATH'" >> $FILE_PATH
 echo -e "\e[01;34mInstalling some essential softwares\e[00m"
 sudo apt-get install git wget ca-certificates curl gnupg lsb-release openssh-client open-ssh-server -y &&
 sudo apt install openjdk-18-jdk -y &&
+sudo apt install net-tools -y &&
 echo
 
 #Instalando o docker engine
@@ -61,6 +62,7 @@ echo -e "\e[01;34mInstalling the packages that are in the DEB_PATH\e[00m"
 FILES=$(ls $DEB_PATH)
 for file in $FILES
 do
+echo -e "\e[01;32mInstalling $file\e[00m"
 sudo dpkg -i $DEB_PATH$file
 done
 echo
@@ -79,6 +81,9 @@ echo 'export ANDROID_SDK_ROOT=$HOME/android-sdk' >> $FILE_PATH
 echo 'export PATH=$PATH:$ANDROID_SDK_ROOT/emulator' >> $FILE_PATH
 echo 'export PATH=$PATH:$ANDROID_SDK_ROOT/platform-tools' >> $FILE_PATH
 echo
+
+#Create my folder projetos
+mkdir $HOME/projetos
 
 
 echo "----- FINALIZADO COM SUCESSO -----"
