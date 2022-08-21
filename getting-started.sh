@@ -40,7 +40,7 @@ echo "alias src='source $FILE_PATH'" >> $FILE_PATH
 
 #Pacotes a serem intalados
 echo -e "\e[01;34mInstalling some essential softwares\e[00m"
-sudo apt-get install git wget ca-certificates curl gnupg lsb-release openssh-client open-ssh-server-y &&
+sudo apt-get install git wget ca-certificates curl gnupg lsb-release openssh-client open-ssh-server -y &&
 sudo apt install openjdk-18-jdk -y &&
 echo
 
@@ -55,6 +55,7 @@ sudo apt-get update
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin docker-compose -y
 echo
 
+if [ -e $DEB_PATH ] ; then
 #Instalando packotes deb colocados na pasta informado em DEB_PATH
 echo -e "\e[01;34mInstalling the packages that are in the DEB_PATH\e[00m"
 FILES=$(ls $DEB_PATH)
@@ -63,6 +64,9 @@ do
 sudo dpkg -i $DEB_PATH$file
 done
 echo
+else
+echo
+fi
 
 #Instalando o nvm
 echo -e "\e[01;34mInstalling the nvm\e[00m"
