@@ -1,32 +1,29 @@
-# Getting Started
+# scripts
 
-This repository is a place where I'm going to put my scripts to facilitate my work. So the first script it's calling getting started where I put some commands to install and configure somethings that I always do when I install the ubuntu.
+Coleção de scripts úteis que uso no dia a dia para automatizar e facilitar meu trabalho.
+Organizados por categoria — cada pasta agrupa scripts de um mesmo tema e traz um README
+explicando o que cada um faz e como usar.
 
-## Functionalities
-### Create some alias
+## Categorias
+
+| Categoria | Descrição |
+|-----------|-----------|
+| [`ubuntu-setup/`](./ubuntu-setup) | Scripts de pós-instalação e configuração de um Ubuntu novo (aliases, softwares, arquivos .deb). |
+
+> Novas categorias serão adicionadas conforme forem surgindo (ex.: `git/`, `docker/`, `windows/`, `utils/`).
+
+## Como usar
+
+Cada script é independente. Entre na categoria desejada, leia o README da pasta e execute
+o script conforme as instruções. Em geral (Linux):
 
 ```bash
-alias c='clear'
-alias update='sudo apt update'
-alias upgrade='sudo apt upgrade -y'
-alias up='update && upgrade'
-alias install='sudo apt install'
-alias src='source .bashrc'
+chmod +x nome-do-script
+./nome-do-script
 ```
 
-### Softwares Installed
-- git
-- wget
-- ca-certificates
-- curl
-- gnupg
-- lsb-release
-- openssh-client
-- openssh-server
-- openjdk-18-jdk
-- docker engine
-- docker compose
-- nvm
+## Convenções
 
-### Install deb files
-If you want to install some deb files with the script, before you run you can create a folder in Download with the name deb-files and put all the files that you want to install
+- Um diretório por categoria, em `kebab-case`.
+- Cada categoria tem seu próprio `README.md` documentando os scripts.
+- Scripts devem ser idempotentes sempre que possível (rodar duas vezes não quebra nada).
