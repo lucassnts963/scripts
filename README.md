@@ -8,6 +8,7 @@ explicando o que cada um faz e como usar.
 
 | Categoria | Descrição |
 |-----------|-----------|
+| [`organize-downloads/`](./organize-downloads) | Script Node que organiza a pasta de Downloads movendo os arquivos para subpastas por tipo. |
 | [`ubuntu-setup/`](./ubuntu-setup) | Scripts de pós-instalação e configuração de um Ubuntu novo (aliases, softwares, arquivos .deb). |
 
 > Novas categorias serão adicionadas conforme forem surgindo (ex.: `git/`, `docker/`, `windows/`, `utils/`).
