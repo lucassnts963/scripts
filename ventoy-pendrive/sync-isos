@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Copia as ISOs de ~/Downloads (ou do diretório passado como argumento) pra dentro do
+# pendrive Ventoy. Idempotente: roda de novo sempre que adicionar uma ISO nova, só copia
+# o que ainda não existe lá (ISOs não mudam depois de baixadas, então "já existe" = "já
+# está sincronizado"). Usa `cp` puro, sem depender de rsync (não vem instalado por padrão
+# no Debian). Não precisa de sudo — a partição de dados do Ventoy é FAT32/exFAT normal,
+# montável pelo próprio usuário via udisks2.
+set -euo pipefail
+shopt -s nullglob nocaseglob
+
+SRC="${1:-$HOME/Downloads}"
+ISOS=("$SRC"/*.iso)
+
+if [ ${#ISOS[@]} -eq 0 ]; then
+    echo "Nenhum .iso encontrado em: $SRC" >&2
+    exit 1
+fi
+
+DEV="$(lsblk -rno NAME,LABEL | awk '$2=="Ventoy"{print "/dev/"$1; exit}')"
+if [ -z "$DEV" ]; then
+    echo "Não achei nenhuma partição com label 'Ventoy' plugada." >&2
+    echo "Confere com 'lsblk -o NAME,LABEL,SIZE' se o pendrive está conectado." >&2
+    exit 1
+fi
+
+# `lsblk MOUNTPOINT` pode estar desatualizado logo depois de um mount recente (visto na
+# prática: dava vazio com o disco já montado, e o udisksctl subsequente falhava com
+# "AlreadyMounted"). `findmnt` lê o estado atual de verdade, sem cache.
+MOUNTPOINT="$(findmnt -rno TARGET "$DEV" 2>/dev/null || true)"
+if [ -z "$MOUNTPOINT" ]; then
+    echo "Montando $DEV..."
+    MOUNT_OUT="$(udisksctl mount -b "$DEV" --no-user-interaction 2>&1)" || true
+    MOUNTPOINT="$(echo "$MOUNT_OUT" | sed -n "s/.*at \(.*\)\.$/\1/p")"
+    if [ -z "$MOUNTPOINT" ]; then
+        # já montado por fora (ex: automount do ambiente gráfico) — pega o ponto real
+        MOUNTPOINT="$(findmnt -rno TARGET "$DEV" 2>/dev/null || true)"
+    fi
+    if [ -z "$MOUNTPOINT" ]; then
+        echo "Não consegui montar $DEV automaticamente: $MOUNT_OUT" >&2
+        echo "Monta na mão e roda de novo." >&2
+        exit 1
+    fi
+fi
+
+echo "Pendrive Ventoy: $DEV -> $MOUNTPOINT"
+echo "Sincronizando ${#ISOS[@]} ISO(s) de: $SRC"
+echo
+
+for iso in "${ISOS[@]}"; do
+    dest="$MOUNTPOINT/$(basename "$iso")"
+    if [ -e "$dest" ]; then
+        echo "já existe, pulando: $(basename "$iso")"
+    else
+        echo "copiando: $(basename "$iso")"
+        cp "$iso" "$dest"
+    fi
+done
+
+echo
+echo "ISOs no pendrive agora:"
+find "$MOUNTPOINT" -maxdepth 1 -iname "*.iso" -printf "  %f (%s bytes)\n" | sort
+
+DISPONIVEL="$(df -h --output=avail "$MOUNTPOINT" | tail -1 | tr -d ' ')"
+echo
+echo "Espaço livre no pendrive: $DISPONIVEL"

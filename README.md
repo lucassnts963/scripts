@@ -10,6 +10,9 @@ explicando o que cada um faz e como usar.
 |-----------|-----------|
 | [`organize-downloads/`](./organize-downloads) | Script Node que organiza a pasta de Downloads movendo os arquivos para subpastas por tipo. |
 | [`ubuntu-setup/`](./ubuntu-setup) | Scripts de pós-instalação e configuração de um Ubuntu novo (aliases, softwares, arquivos .deb). |
+| [`ventoy-pendrive/`](./ventoy-pendrive) | Sincroniza ISOs de `~/Downloads` pro pendrive multiboot Ventoy. |
+| [`gnome-session/`](./gnome-session) | Instala e liga/desliga uma sessão GNOME sob demanda a partir da TTY, sem display manager. |
+| [`debian-headless-usb/`](./debian-headless-usb) | Remasteriza o netinst do Debian pra instalar sem tela (disco, rede, SSH). Sem Ventoy — pendrive dedicado. |
 
 > Novas categorias serão adicionadas conforme forem surgindo (ex.: `git/`, `docker/`, `windows/`, `utils/`).
 

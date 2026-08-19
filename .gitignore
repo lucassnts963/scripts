@@ -1,0 +1,6 @@
+# ISOs geradas (grandes demais pro git, refazer com build-iso)
+*.iso
+
+# Preseed real tem hash de senha — repo é público, não deve ir pra lá.
+# Fica só local / em backup privado.
+ventoy-pendrive/preseed-debian-headless.cfg

@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Instala o GNOME sem deixar ele virar o jeito padrão de iniciar o sistema. O gdm3 vem
+# junto como dependência obrigatória do gnome-core (não dá pra evitar via apt), então a
+# saída é instalar normal e depois mascarar o serviço — ele fica no disco mas nunca sobe
+# sozinho no boot. Continua tudo pela TTY, GNOME só abre quando chamado (ver gnome-toggle).
+set -euo pipefail
+
+echo "Instalando gnome-core + libnotify-bin (notificações do watch-beacon-node)..."
+sudo apt-get update
+sudo apt-get install -y gnome-core libnotify-bin
+
+echo
+echo "Desativando e mascarando o gdm3 (não queremos display manager nenhum autostartando)..."
+sudo systemctl disable --now gdm3.service
+sudo systemctl mask gdm3.service
+
+echo
+echo "Pronto. GNOME instalado, gdm3 mascarado (nunca inicia sozinho)."
+echo "Pra abrir uma sessão GNOME a partir da TTY: gnome-toggle"

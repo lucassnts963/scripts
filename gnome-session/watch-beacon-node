@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Roda em background enquanto a sessão GNOME estiver aberta (chamado pelo gnome-toggle,
+# nunca à mão). Fica checando se o notebook headless (instalado manualmente, hostname
+# "homelab" — mDNS/.local mostrou instável nesta rede, por isso tenta os dois: hostname e
+# o IP fixo conhecido) já responde por SSH, e manda uma notificação assim que aparecer.
+# Sai sozinho depois do primeiro sucesso — sem isso viraria um processo permanente à toa.
+set -euo pipefail
+
+HOSTS=("homelab.local" "192.168.18.222")
+USER_REMOTO="lucas"
+CHAVE="$HOME/.ssh/beacon_node_ed25519"
+INTERVALO=20
+
+while true; do
+    for host in "${HOSTS[@]}"; do
+        if ssh -i "$CHAVE" -o BatchMode=yes -o ConnectTimeout=3 \
+            -o StrictHostKeyChecking=accept-new \
+            "$USER_REMOTO@$host" true 2>/dev/null; then
+            notify-send "homelab online" "SSH disponível: ssh -i $CHAVE $USER_REMOTO@$host"
+            exit 0
+        fi
+    done
+    sleep "$INTERVALO"
+done

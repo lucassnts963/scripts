@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Liga/desliga uma sessão GNOME a partir da TTY, sem display manager — mesmo espírito do
+# `start-hyprland`: chama, a sessão sobe e toma o terminal; sair da sessão devolve o
+# prompt da TTY sozinho.
+#
+# Sem sessão rodando: abre uma, e sobe o watch-beacon-node junto (só enquanto o GNOME
+# estiver aberto — encerra junto, não fica um processo de monitoramento perdido depois).
+# Com sessão já rodando (chamado de outra TTY ou por SSH): encerra ela, sem deixar nada
+# aberto à toa.
+set -euo pipefail
+
+DIR="$(dirname "$(readlink -f "$0")")"
+WATCHER="$DIR/watch-beacon-node"
+
+if pgrep -x gnome-session > /dev/null; then
+    echo "Sessão GNOME rodando — encerrando..."
+    if command -v gnome-session-quit > /dev/null; then
+        gnome-session-quit --logout --force --no-prompt 2>/dev/null || pkill -TERM gnome-session
+    else
+        pkill -TERM gnome-session
+    fi
+    exit 0
+fi
+
+echo "Abrindo sessão GNOME..."
+
+WATCHER_PID=""
+if [ -x "$WATCHER" ]; then
+    "$WATCHER" &
+    WATCHER_PID=$!
+fi
+trap '[ -n "$WATCHER_PID" ] && kill "$WATCHER_PID" 2>/dev/null; true' EXIT
+
+dbus-run-session -- gnome-session

@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# Remasteriza o netinst oficial do Debian pra instalar sozinho, sem menu, sem tela —
+# baseado no ISO já baixado em ~/Downloads. Diferente do ~/dev/scripts/ventoy-pendrive/,
+# isso não usa Ventoy: é um pendrive dedicado só pro Debian, evitando o problema de
+# Secure Boot/MOK que o shim do Ventoy deu.
+#
+# O que faz:
+# 1. Extrai o ISO original (7z, sem precisar montar/sudo).
+# 2. Copia o preseed pra raiz do ISO (fica acessível como /cdrom/preseed.cfg pro instalador).
+# 3. Adiciona uma entrada de boot nova (BIOS via isolinux + UEFI via grub) com
+#    `auto=true priority=critical preseed/file=/cdrom/preseed.cfg` — mas SEM torná-la padrão
+#    nem auto-selecionar por timeout, a menos que rode com --auto. Por padrão fica só mais
+#    uma opção no menu, escolha sempre manual (mais seguro quando o pendrive pode ser
+#    bootado numa máquina com mais de um disco, tipo a principal).
+# 4. Reempacota como ISO híbrido (bootável em BIOS e UEFI, gravável direto com dd) via xorriso,
+#    seguindo a receita oficial: https://wiki.debian.org/DebianInstaller/Preseed/EditIso
+#
+# Uso: ./build-iso          -> menu manual, nada acontece sozinho (padrão, mais seguro)
+#      ./build-iso --auto   -> volta o comportamento antigo (auto-boot em poucos segundos,
+#                              só pro caso de um notebook realmente sem tela/teclado nenhum)
+set -euo pipefail
+
+AUTO=0
+[ "${1:-}" = "--auto" ] && AUTO=1
+
+SRC_ISO="$HOME/Downloads/debian-13.6.0-amd64-netinst.iso"
+PRESEED="$(dirname "$(readlink -f "$0")")/../ventoy-pendrive/preseed-debian-headless.cfg"
+WORKDIR="/tmp/debian-headless-build"
+OUT_ISO="$HOME/dev/scripts/debian-headless-usb/debian-13.6.0-headless-autoinstall.iso"
+ISOHDPFX="/usr/lib/ISOLINUX/isohdpfx.bin"
+
+for cmd in xorriso 7z; do
+    command -v "$cmd" > /dev/null || {
+        echo "Falta o comando '$cmd'. Instala com:" >&2
+        echo "  sudo apt-get install -y xorriso isolinux" >&2
+        exit 1
+    }
+done
+[ -f "$ISOHDPFX" ] || {
+    echo "Falta $ISOHDPFX (vem do pacote isolinux). Instala com:" >&2
+    echo "  sudo apt-get install -y isolinux" >&2
+    exit 1
+}
+[ -f "$SRC_ISO" ] || { echo "ISO não encontrada: $SRC_ISO" >&2; exit 1; }
+[ -f "$PRESEED" ] || { echo "Preseed não encontrado: $PRESEED" >&2; exit 1; }
+if grep -q "SENHA_HASH_AQUI\|SSH_PUBKEY_AQUI" "$PRESEED"; then
+    echo "O preseed ainda tem placeholders não substituídos — confere $PRESEED" >&2
+    exit 1
+fi
+
+echo "==> Extraindo ISO original..."
+rm -rf "$WORKDIR"
+mkdir -p "$WORKDIR"
+7z x -y -o"$WORKDIR" "$SRC_ISO" > /dev/null
+
+echo "==> Copiando preseed pra raiz do ISO..."
+cp "$PRESEED" "$WORKDIR/preseed.cfg"
+
+echo "==> Adicionando entrada de boot automática (BIOS: isolinux)..."
+cat > "$WORKDIR/isolinux/txt.cfg" <<'EOF'
+label autopreseed
+	menu label ^Automated preseed install (beacon-node)
+	kernel /install.amd/vmlinuz
+	append auto=true priority=critical vga=788 preseed/file=/cdrom/preseed.cfg initrd=/install.amd/initrd.gz --- quiet
+
+label install
+	menu label ^Install
+	kernel /install.amd/vmlinuz
+	append vga=788 initrd=/install.amd/initrd.gz --- quiet
+EOF
+
+if [ "$AUTO" -eq 1 ]; then
+    echo "==> Modo --auto: marcando a entrada automática como padrão, com timeout curto..."
+    sed -i \
+        -e 's/^timeout 0$/timeout 50/' \
+        -e '/^timeout 50$/a ontimeout autopreseed' \
+        "$WORKDIR/isolinux/isolinux.cfg"
+else
+    echo "==> Modo manual (padrão): menu fica esperando escolha, sem timeout."
+fi
+
+echo "==> Adicionando entrada de boot (UEFI: grub)..."
+AUTO="$AUTO" python3 - "$WORKDIR/boot/grub/grub.cfg" <<'PYEOF'
+import os
+import sys
+path = sys.argv[1]
+auto = os.environ.get("AUTO") == "1"
+content = open(path).read()
+marker = "set theme=/boot/grub/theme/1\n"
+default_lines = (
+    '\nset default="Automated preseed install (beacon-node)"\nset timeout=5\n\n'
+    if auto
+    else "\n"
+)
+addition = (
+    marker
+    + default_lines
+    + "menuentry --hotkey=p 'Automated preseed install (beacon-node)' {\n"
+    + "    set background_color=black\n"
+    + "    linux    /install.amd/vmlinuz auto=true priority=critical vga=788 "
+    + "preseed/file=/cdrom/preseed.cfg --- quiet\n"
+    + "    initrd   /install.amd/initrd.gz\n"
+    + "}\n"
+)
+assert marker in content, "marcador não encontrado em grub.cfg — o ISO pode ter mudado de layout"
+content = content.replace(marker, addition, 1)
+open(path, "w").write(content)
+PYEOF
+
+echo "==> Reempacotando como ISO híbrido (BIOS + UEFI) com xorriso..."
+rm -f "$OUT_ISO"
+xorriso -as mkisofs \
+    -r -V "Debian headless autoinstall" \
+    -o "$OUT_ISO" \
+    -J -joliet-long \
+    -isohybrid-mbr "$ISOHDPFX" \
+    -partition_offset 16 \
+    -b isolinux/isolinux.bin \
+    -c isolinux/boot.cat \
+    -no-emul-boot -boot-load-size 4 -boot-info-table \
+    -eltorito-alt-boot \
+    -e boot/grub/efi.img \
+    -no-emul-boot -isohybrid-gpt-basdat \
+    "$WORKDIR"
+
+echo
+echo "Pronto: $OUT_ISO"
+ls -lh "$OUT_ISO"
+echo
+echo "Próximo passo: ./write-usb"

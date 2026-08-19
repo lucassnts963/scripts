@@ -1,0 +1,15 @@
+{
+    "control": [
+        { "VTOY_DEFAULT_SEARCH_ROOT": "/" },
+        { "VTOY_MENU_TIMEOUT": "15" },
+        { "VTOY_DEFAULT_IMAGE": "/debian-13.6.0-amd64-netinst.iso" },
+        { "VTOY_SECONDARY_BOOT_MENU": "1" },
+        { "VTOY_SECONDARY_TIMEOUT": "15" }
+    ],
+    "auto_install": [
+        {
+            "image": "/debian-13.6.0-amd64-netinst.iso",
+            "template": "/ventoy/preseed-debian-headless.cfg"
+        }
+    ]
+}
