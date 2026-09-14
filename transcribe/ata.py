@@ -209,8 +209,8 @@ def main():
 
     parser.add_argument("transcricao", type=str, help="Caminho do arquivo de transcrição (.txt gerado pelo transcribe.py)")
     parser.add_argument("-m", "--model", default=os.environ.get("ATA_MODEL", DEFAULT_MODEL), help=f"Nome do modelo a usar no servidor (padrão: {DEFAULT_MODEL})")
-    parser.add_argument("--api-base", default=os.environ.get("ATA_API_BASE", DEFAULT_API_BASE), help=f"URL base da API compatível com OpenAI (padrão: {DEFAULT_API_BASE}, servidor local do Ollama). LM Studio: http://localhost:1234/v1. OpenAI: https://api.openai.com/v1")
-    parser.add_argument("--api-key", default=os.environ.get("OPENAI_API_KEY") or os.environ.get("ATA_API_KEY"), help="Chave de API (necessária para OpenAI e outros serviços remotos; servidores locais geralmente ignoram). Também pode ser definida via OPENAI_API_KEY ou ATA_API_KEY")
+    parser.add_argument("--api-base", default=os.environ.get("ATA_API_BASE", DEFAULT_API_BASE), help=f"URL base da API compatível com OpenAI (padrão: {DEFAULT_API_BASE}, servidor local do Ollama). LM Studio: http://localhost:1234/v1. NVIDIA API (build.nvidia.com): https://integrate.api.nvidia.com/v1. OpenAI: https://api.openai.com/v1")
+    parser.add_argument("--api-key", default=os.environ.get("ATA_API_KEY") or os.environ.get("OPENAI_API_KEY") or os.environ.get("NVIDIA_API_KEY"), help="Chave de API (necessária para OpenAI, NVIDIA API e outros serviços remotos; servidores locais geralmente ignoram). Também pode ser definida via ATA_API_KEY, OPENAI_API_KEY ou NVIDIA_API_KEY")
     parser.add_argument("-o", "--output", default=None, help="Caminho de saída .md (padrão: <transcricao>_ata.md)")
     parser.add_argument("--chunk-chars", type=int, default=12000, help="Tamanho máximo, em caracteres, de cada trecho enviado ao modelo em transcrições longas (padrão: 12000)")
     parser.add_argument("--vocab", default=None, help=f"Arquivo de vocabulário (mesmo do transcribe.py) para a LLM corrigir nomes/termos na ata (padrão: {DEFAULT_VOCAB_PATH.name} na pasta do script, se existir)")
