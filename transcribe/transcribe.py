@@ -285,7 +285,6 @@ def main():
         beam_size=5,
         language=args.lang,
         hotwords=hotwords,
-        log_progress=True,
         # Em áudio real (várias pessoas falando por cima, ruído, trechos
         # incertos), o Whisper pode entrar num loop repetindo a mesma
         # palavra/frase dezenas de vezes. condition_on_previous_text=False
@@ -302,18 +301,40 @@ def main():
     detected_lang = args.lang or f"{info.language} ({info.language_probability:1%})"
     print(f"[*] Idioma: {detected_lang} | Duração: {info.duration:.1f}s\n")
 
+    # Barra própria (em vez de log_progress=True do faster-whisper): a barra
+    # interna usa \r pra se redesenhar na última linha do terminal, o que
+    # bagunça tudo quando misturada com os prints de cada frase — o print
+    # empurra a barra pra baixo e ela reaparece duplicada. tqdm.write() limpa
+    # a barra, imprime a linha, e redesenha a barra no lugar certo, sempre
+    # embaixo. Importante: a barra do tqdm usa stderr por padrão, mas nossos
+    # prints vão pro stdout — em terminais não-interativos (ex: saída
+    # redirecionada pra arquivo) o stdout fica bufferizado em bloco enquanto
+    # o stderr é gravado na hora, fazendo a barra "adiantar" e o texto só
+    # aparecer no final, tudo de uma vez. Forçamos os dois pro mesmo stream
+    # (stdout) pra manter a ordem real de execução.
+    from tqdm import tqdm
+
     resultados = []
-    for segment in segments:
-        stamp = f"[{segment.start:05.1f}s -> {segment.end:05.1f}s]"
-        text = segment.text.strip()
-        speaker = speaker_at(turns, segment.start, segment.end) if turns is not None else None
+    bar_format = (
+        "\033[36m[*] Transcrevendo\033[0m {percentage:3.0f}%|{bar}| "
+        "\033[32m{n:.1f}s\033[0m/{total:.1f}s [{elapsed}<{remaining}, {rate_fmt}]"
+    )
+    with tqdm(total=info.duration, unit="s", colour="green", bar_format=bar_format, file=sys.stdout) as pbar:
+        posicao = 0.0
+        for segment in segments:
+            stamp = f"[{segment.start:05.1f}s -> {segment.end:05.1f}s]"
+            text = segment.text.strip()
+            speaker = speaker_at(turns, segment.start, segment.end) if turns is not None else None
 
-        if speaker:
-            print(f"{stamp} {speaker}: {text}")
-        else:
-            print(f"{stamp} {text}")
+            linha = f"{stamp} {speaker}: {text}" if speaker else f"{stamp} {text}"
+            tqdm.write(linha, file=sys.stdout)
 
-        resultados.append({"stamp": stamp, "text": text, "speaker": speaker})
+            pbar.update(max(0.0, segment.end - posicao))
+            posicao = segment.end
+
+            resultados.append({"stamp": stamp, "text": text, "speaker": speaker})
+
+        pbar.update(max(0.0, info.duration - posicao))
 
     speaker_map = parse_speaker_names(args.speaker_names)
     if args.diarize and not args.no_rename:

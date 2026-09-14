@@ -76,7 +76,41 @@ def split_into_chunks(text, max_chars):
     return chunks
 
 
-def chat(client, model, system, user, temperature=0.2):
+def detectar_loop(palavras, min_repeticoes=5, max_ngram=6):
+    """Detecta se o final da lista de palavras é uma sequência de n-gramas repetidos.
+
+    LLMs pequenas/quantizadas (ex: qwen2.5:1.5b) têm tendência maior a entrar
+    num loop repetindo a mesma palavra ou frase indefinidamente — mesmo
+    problema que já vimos no Whisper, aqui do lado da geração de texto.
+    """
+    n = len(palavras)
+    for tam in range(1, max_ngram + 1):
+        total = tam * min_repeticoes
+        if n < total:
+            continue
+        cauda = palavras[n - total:]
+        ngram = cauda[:tam]
+        if all(cauda[i:i + tam] == ngram for i in range(0, total, tam)):
+            return True
+    return False
+
+
+def truncar_repeticao(texto, min_repeticoes=5, max_ngram=6):
+    """Corta o texto no primeiro ponto onde um n-grama se repete várias vezes seguidas."""
+    palavras = texto.split()
+    n = len(palavras)
+    for i in range(n):
+        for tam in range(1, max_ngram + 1):
+            total = tam * min_repeticoes
+            if i + total > n:
+                continue
+            ngram = palavras[i:i + tam]
+            if all(palavras[i + k * tam:i + (k + 1) * tam] == ngram for k in range(min_repeticoes)):
+                return " ".join(palavras[:i]).strip(), True
+    return texto, False
+
+
+def chat(client, model, system, user, temperature=0.2, frequency_penalty=0.4, presence_penalty=0.2):
     # Streaming em vez de esperar a resposta inteira: sem isso, uma chamada
     # longa a um LLM local fica minutos sem nenhuma saída, parecendo travada
     # (mesmo problema que resolvemos na diarização/transcrição).
@@ -87,18 +121,44 @@ def chat(client, model, system, user, temperature=0.2):
             {"role": "user", "content": user},
         ],
         temperature=temperature,
+        # Penalizam tokens repetidos, reduzindo a chance de loop — sem
+        # eliminar por completo em modelos muito pequenos, por isso o
+        # detector de loop abaixo corta o texto se mesmo assim acontecer.
+        frequency_penalty=frequency_penalty,
+        presence_penalty=presence_penalty,
         stream=True,
     )
+
     partes = []
+    texto_acumulado = ""
+    loop_detectado = False
     for chunk in stream:
         if not chunk.choices:
             continue
         delta = chunk.choices[0].delta.content
-        if delta:
-            print(delta, end="", flush=True)
-            partes.append(delta)
+        if not delta:
+            continue
+
+        print(delta, end="", flush=True)
+        partes.append(delta)
+        texto_acumulado += delta
+
+        palavras = texto_acumulado.split()
+        if len(palavras) >= 6 and detectar_loop(palavras):
+            loop_detectado = True
+            break
     print()
-    return "".join(partes).strip()
+
+    if loop_detectado:
+        stream.close()
+
+    resultado = "".join(partes).strip()
+
+    if loop_detectado:
+        resultado, _ = truncar_repeticao(resultado)
+        print("[!] Aviso: a LLM entrou em loop de repetição nesse trecho — texto cortado no ponto onde começou.\n")
+
+    return resultado
 
 
 def gerar_ata(client, model, transcript, chunk_chars, vocab_terms=None):
