@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -61,6 +62,11 @@ def build_vocab_note(vocab_terms):
     )
 
 
+def sanitizar_nome_arquivo(nome):
+    """Troca caracteres inválidos em nome de arquivo no Windows (ex: ':' em 'qwen2.5:1.5b') por '-'."""
+    return re.sub(r'[\\/:*?"<>|]+', "-", nome).strip("-")
+
+
 def split_into_chunks(text, max_chars):
     blocos = text.split("\n\n")
     chunks, atual, tamanho_atual = [], [], 0
@@ -76,37 +82,49 @@ def split_into_chunks(text, max_chars):
     return chunks
 
 
-def detectar_loop(palavras, min_repeticoes=5, max_ngram=6):
-    """Detecta se o final da lista de palavras é uma sequência de n-gramas repetidos.
+# (tamanho do n-grama em palavras, quantas repetições seguidas contam como loop).
+# LLMs pequenas/quantizadas (ex: qwen2.5:1.5b) tanto travam repetindo uma
+# palavra/frase curta quanto — como vimos na prática — um bloco de várias
+# falas inteiras (20-30+ palavras) alternando entre os mesmos falantes.
+# Blocos maiores repetindo já 3 vezes seguidas são inequivocamente um loop
+# (ao contrário de uma palavra curta, que pode legitimamente aparecer
+# repetida algumas vezes em fala natural), por isso o limiar cai conforme
+# o n-grama cresce.
+_FAIXAS_LOOP = [(1, 6, 5), (7, 20, 4), (21, 80, 3)]
 
-    LLMs pequenas/quantizadas (ex: qwen2.5:1.5b) têm tendência maior a entrar
-    num loop repetindo a mesma palavra ou frase indefinidamente — mesmo
-    problema que já vimos no Whisper, aqui do lado da geração de texto.
-    """
+
+def _cauda_repetida(palavras, tam, min_repeticoes):
+    total = tam * min_repeticoes
     n = len(palavras)
-    for tam in range(1, max_ngram + 1):
-        total = tam * min_repeticoes
-        if n < total:
-            continue
-        cauda = palavras[n - total:]
-        ngram = cauda[:tam]
-        if all(cauda[i:i + tam] == ngram for i in range(0, total, tam)):
-            return True
+    if n < total:
+        return False
+    cauda = palavras[n - total:]
+    ngram = cauda[:tam]
+    return all(cauda[i:i + tam] == ngram for i in range(0, total, tam))
+
+
+def detectar_loop(palavras):
+    """Detecta se o final da lista de palavras é uma sequência de n-gramas repetidos."""
+    for tam_min, tam_max, min_repeticoes in _FAIXAS_LOOP:
+        for tam in range(tam_min, tam_max + 1):
+            if _cauda_repetida(palavras, tam, min_repeticoes):
+                return True
     return False
 
 
-def truncar_repeticao(texto, min_repeticoes=5, max_ngram=6):
+def truncar_repeticao(texto):
     """Corta o texto no primeiro ponto onde um n-grama se repete várias vezes seguidas."""
     palavras = texto.split()
     n = len(palavras)
     for i in range(n):
-        for tam in range(1, max_ngram + 1):
-            total = tam * min_repeticoes
-            if i + total > n:
-                continue
-            ngram = palavras[i:i + tam]
-            if all(palavras[i + k * tam:i + (k + 1) * tam] == ngram for k in range(min_repeticoes)):
-                return " ".join(palavras[:i]).strip(), True
+        for tam_min, tam_max, min_repeticoes in _FAIXAS_LOOP:
+            for tam in range(tam_min, tam_max + 1):
+                total = tam * min_repeticoes
+                if i + total > n:
+                    continue
+                ngram = palavras[i:i + tam]
+                if all(palavras[i + k * tam:i + (k + 1) * tam] == ngram for k in range(min_repeticoes)):
+                    return " ".join(palavras[:i]).strip(), True
     return texto, False
 
 
@@ -239,7 +257,11 @@ def main():
             f"    Detalhe: {exc}"
         )
 
-    out_path = Path(args.output).expanduser().resolve() if args.output else txt_path.with_name(f"{txt_path.stem}_ata.md")
+    if args.output:
+        out_path = Path(args.output).expanduser().resolve()
+    else:
+        modelo_seguro = sanitizar_nome_arquivo(args.model)
+        out_path = txt_path.with_name(f"{txt_path.stem}_ata_{modelo_seguro}.md")
     out_path.write_text(ata, encoding="utf-8")
 
     print(f"\n[✓] Ata gerada: {out_path}")
