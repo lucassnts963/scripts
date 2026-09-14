@@ -1,0 +1,41 @@
+Windows Registry Editor Version 5.00
+
+; ==============================================================================
+; 1. Menu Pai no Contexto de Audio
+; ==============================================================================
+[HKEY_CURRENT_USER\Software\Classes\SystemFileAssociations\audio\shell\TranscribeAudio]
+"MUIVerb"="Transcrever com Whisper"
+"ExtendedSubCommandsKey"="WhisperActions"
+
+; ==============================================================================
+; 2. Definição da Árvore de Submenus
+; ==============================================================================
+[HKEY_CURRENT_USER\Software\Classes\WhisperActions\shell\01_Padrao]
+@="Padrão (Modelo Base)"
+
+[HKEY_CURRENT_USER\Software\Classes\WhisperActions\shell\01_Padrao\command]
+@="cmd.exe /k \"\"C:\\dev\\venv\\Scripts\\python.exe\" \"C:\\dev\\scripts\\transcribe\\transcribe.py\" \"%1\"\""
+
+[HKEY_CURRENT_USER\Software\Classes\WhisperActions\shell\02_Timestamps]
+@="Padrão + Timestamps"
+
+[HKEY_CURRENT_USER\Software\Classes\WhisperActions\shell\02_Timestamps\command]
+@="cmd.exe /k \"\"C:\\dev\\venv\\Scripts\\python.exe\" \"C:\\dev\\scripts\\transcribe\\transcribe.py\" \"%1\" --timestamps\""
+
+[HKEY_CURRENT_USER\Software\Classes\WhisperActions\shell\03_Rapido]
+@="Rápido (Modelo Tiny)"
+
+[HKEY_CURRENT_USER\Software\Classes\WhisperActions\shell\03_Rapido\command]
+@="cmd.exe /k \"\"C:\\dev\\venv\\Scripts\\python.exe\" \"C:\\dev\\scripts\\transcribe\\transcribe.py\" \"%1\" -m tiny\""
+
+[HKEY_CURRENT_USER\Software\Classes\WhisperActions\shell\04_Precisao]
+@="Alta Precisão (Modelo Small)"
+
+[HKEY_CURRENT_USER\Software\Classes\WhisperActions\shell\04_Precisao\command]
+@="cmd.exe /k \"\"C:\\dev\\venv\\Scripts\\python.exe\" \"C:\\dev\\scripts\\transcribe\\transcribe.py\" \"%1\" -m small\""
+
+[HKEY_CURRENT_USER\Software\Classes\WhisperActions\shell\05_PTBR]
+@="Português (PT-BR) + Timestamps"
+
+[HKEY_CURRENT_USER\Software\Classes\WhisperActions\shell\05_PTBR\command]
+@="cmd.exe /k \"\"C:\\dev\\venv\\Scripts\\python.exe\" \"C:\\dev\\scripts\\transcribe\\transcribe.py\" \"%1\" -l pt --timestamps\""

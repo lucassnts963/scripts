@@ -1,0 +1,22 @@
+# Vocabulário para melhorar a transcrição (transcribe.py)
+#
+# Um termo por linha: nomes de pessoas, siglas, jargão técnico, nomes de
+# empresas/projetos, termos que o Whisper costuma errar, etc.
+# Linhas em branco e começando com "#" são ignoradas.
+#
+# Esses termos são passados ao modelo como "hotwords" para aumentar a
+# chance de serem reconhecidos corretamente. Edite livremente conforme
+# for percebendo erros recorrentes nas suas transcrições.
+#
+# Exemplos (apague e substitua pelos seus):
+# Lucas
+# Kubernetes
+# Terraform
+# HSE
+Lucas
+Fernanda
+Marcia
+Lidiane
+Eu cuido, Eu previno
+HSE
+Gestão de Ouro
