@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Uso: pausar <id-do-agente> [quem-pediu]
+# Cria agentes/<id>/PAUSADO no vault. Com o arquivo presente, o agente só registra "pausado" e sai.
+set -euo pipefail
+id="${1:-}"
+quem="${2:-Lucas}"
+vault="${VAULT_DIR:-/vault}"
+if [[ ! "$id" =~ ^[a-z0-9-]+$ ]]; then echo "erro: informe o id do agente (ex.: chaleira)" >&2; exit 2; fi
+dir="$vault/agentes/$id"
+if [[ ! -d "$dir" ]]; then echo "erro: $dir não existe" >&2; exit 3; fi
+printf 'pausado em %s\npor %s\n' "$(date '+%Y-%m-%d %H:%M')" "$quem" > "$dir/PAUSADO"
+echo "ok: $id pausado ($dir/PAUSADO)"

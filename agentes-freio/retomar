@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Uso: retomar <id-do-agente>
+set -euo pipefail
+id="${1:-}"
+vault="${VAULT_DIR:-/vault}"
+if [[ ! "$id" =~ ^[a-z0-9-]+$ ]]; then echo "erro: informe o id do agente (ex.: chaleira)" >&2; exit 2; fi
+f="$vault/agentes/$id/PAUSADO"
+if [[ -f "$f" ]]; then rm -f "$f"; echo "ok: $id retomado"; else echo "$id já estava ativo (sem PAUSADO)"; fi

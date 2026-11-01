@@ -13,6 +13,8 @@ explicando o que cada um faz e como usar.
 | [`ventoy-pendrive/`](./ventoy-pendrive) | Sincroniza ISOs de `~/Downloads` pro pendrive multiboot Ventoy. |
 | [`gnome-session/`](./gnome-session) | Instala e liga/desliga uma sessão GNOME sob demanda a partir da TTY, sem display manager. |
 | [`debian-headless-usb/`](./debian-headless-usb) | Remasteriza o netinst do Debian pra instalar sem tela (disco, rede, SSH). Sem Ventoy — pendrive dedicado. |
+| [`montisol/`](./montisol) | Backup diário em CSV da base de medição do Trocador (SQLite) em projects/montisol/assets/medicao/backup/AAAA-MM-DD/, guardando 60 dias |
+| [`agentes-freio/`](./agentes-freio) | Freio de mão: /pausar <id> cria agentes/<id>/PAUSADO no vault com data e quem pediu |
 
 > Novas categorias serão adicionadas conforme forem surgindo (ex.: `git/`, `docker/`, `windows/`, `utils/`).
 
