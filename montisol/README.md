@@ -7,3 +7,4 @@ Backup diário em CSV da base de medição do Trocador (SQLite) em projects/mont
 - `medicao-backup.sh` — Backup diário em CSV da base de medição do Trocador (SQLite) em projects/montisol/assets/medicao/backup/AAAA-MM-DD/, guardando 60 dias
 - `medicao-sincronizar.sh` — Traz do n8n (tabela montisol_rdo_recebidos) os envios do app RDO que o Lucas aprovou e registra na base de medição; mostra quantos estão pendentes
 - `medicao.sh <subcomando>` — Os comandos do dia a dia da medição, só de uma lista fechada: `conferir [--periodo N]`, `planilha` (sempre em `dados/`), `whatsapp <arquivo em dados/entrada/> [--grupo G]` e `analise`
+- `medicao.py` — O código da base de medição, que os três scripts acima chamam (`# usa: montisol/medicao.py`). Os dados (o SQLite, os CSV, a planilha e os backups) ficam no vault, na pasta de `MEDICAO_DIR` (padrão `/vault/projects/montisol/assets/medicao`). Mudar este arquivo muda a confiança dos três scripts: o Lucas confia de novo
