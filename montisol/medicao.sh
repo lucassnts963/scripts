@@ -6,11 +6,15 @@
 #   analise                           a análise da base
 # Qualquer outro subcomando ou argumento é recusado. Grava só em dados/.
 # precisa: nada
+# usa: montisol/medicao.py
 set -euo pipefail
-MEDICAO="${MEDICAO_DIR:-/vault/projects/montisol/assets/medicao}"
+# o código vem do repositório (ao lado deste arquivo); os dados ficam no vault
+CODIGO="$(cd "$(dirname "$0")" && pwd)"
+export MEDICAO_DIR="${MEDICAO_DIR:-/vault/projects/montisol/assets/medicao}"
+MEDICAO="$MEDICAO_DIR"
 DADOS="$MEDICAO/dados"
 ENTRADA="$DADOS/entrada"
-PY=(python3 -I "$MEDICAO/medicao.py")
+PY=(python3 -I "$CODIGO/medicao.py")
 
 recusa() { echo "medicao.sh: $*" >&2; exit 2; }
 
